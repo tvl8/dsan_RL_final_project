@@ -1,0 +1,9 @@
+https://triptohell.info/downloads
+
+./code/quake/fteqw/windows/id1:
+PAK0.PAK
+PAK1.PAK
+
+./code/quake/fteqw/windows:
+fteqw_readme.txt
+fteqw64.exe

@@ -1,2 +1,21 @@
 # ignore scenarios folder
 code/vizdoom/scenarios/
+
+# Quake engine + assets (local only)
+code/quake/fteqw/
+*.pak
+*.PAK
+*.exe
+
+# Models and logs
+models/
+logs/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Jupyter
+.ipynb_checkpoints/
