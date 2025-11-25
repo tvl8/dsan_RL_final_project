@@ -7,12 +7,12 @@ The findings from this research would provide applications to:
 - flying drones in complex and changing spaces  
 - teaching an RL agent to navigate new cellular environments (https://pmc.ncbi.nlm.nih.gov/articles/PMC9947252/)  
 
-Goals: 
+Goals:  
     (1) Compare value based and actor critic methods  
     (2) Training on Easy, Medium, and Hard spaces (i.e. mazes)  
     (3) Training on random mazes for train and test split (maybe if we have time)  
 
-Will test generalizability in two video game environments:
+Will test generalizability in two video game environments:  
     (1) Quake (creating new RL benchamrk)     
     (2) ViZDoom (RL modeling on existing video game benchmark)  
 
