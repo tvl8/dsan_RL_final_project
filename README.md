@@ -1,8 +1,6 @@
 # How Generalizable is Reiforcement Learning in Navigating Newly Seen Maps?
 
-Objective: Can an RL agent trained on procedurally generated 3D ViZDoom mazes generalize navigation to newly seen maps?
-
-Rationale: RL typically works in fixed environments. We wanted to see if we could test RL algorithms to learn in new environments. The aim to evaluate how well RL can generalize in new 3D spaces.  
+Objective: RL typically works in fixed environments. We wanted to see if we could test RL algorithms to learn in changing and new environments. **The aim to evaluate how well RL can generalize in new 3D spaces.**  
 
 The findings from this research would provide applications to:  
 - new video games  
@@ -11,12 +9,12 @@ The findings from this research would provide applications to:
 
 Goals: 
     (1) Compare value based and actor critic methods  
-    (2) Training on Easy, Medium, and Hard mazes  
+    (2) Training on Easy, Medium, and Hard spaces (i.e. mazes)  
     (3) Training on random mazes for train and test split (maybe if we have time)  
 
-Will test:
-    (1) Quake (depending on environment complexity - prioritize learning in RL over CS set up)     
-    (2) ViZDoom (Proof of Concept)  
+Will test generalizability in two video game environments:
+    (1) Quake (creating new RL benchamrk)     
+    (2) ViZDoom (RL modeling on existing video game benchmark)  
 
 Models:  
 - DQN  
