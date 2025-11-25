@@ -17,6 +17,8 @@ Will test generalizability in two video game environments:
     (2) ViZDoom (RL modeling on existing video game benchmark)  
 
 Models:  
+**Value-based**   
 - DQN  
-- PPO  
-- A2C  
+**Actor Critic**  
+- PPO    
+- A2C   
