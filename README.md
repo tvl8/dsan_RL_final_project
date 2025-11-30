@@ -22,3 +22,9 @@ Models:
 **Actor Critic**  
 - PPO    
 - A2C   
+
+11/29/2025
+Set up Frog Fly environment and model. Experimented with PPO, SAC, and IMPALA. Also, tried adding a transformer policy to PPO to test if the model can handle partial observability. Please see code in /frog_fly
+
+Next, would like to test transformer policy with SAC.
+Tiana is starting to write paper on 11/30/25
