@@ -1,0 +1,9 @@
+# Frog-Fly 3D: Learning to Chase a Target in 3D Space using Reinforcement Learning
+
+Authors: Tiana Le, Zexi (Allen) Wu  
+Georgetown University  
+DSAN 6650: Reinforcement Learning  
+2 December 2025  
+
+Abstract
+	Reinforcement learning (RL) offers a powerful framework for training agents to operate in dynamic 3D environments, yet traditional neural policies often struggle to capture high-frequency spatial variation due to spectral bias. Building on recent advances in frequency-based representation learning and attention-based policy architectures, this study investigates whether Fourier positional encodings and transformer-based policies can improve navigation toward a moving target. We evaluate three standard RL algorithms—Proximal Policy Optimization (PPO), Soft Actor Critic (SAC), and IMPALA—alongside a fourth variant that augments PPO with a transformer policy network. All agents are trained in a custom Frog–Fly environment implemented in Gymnasium and RLlib, where a frog must pursue a stochastically drifting fly in continuous 3D space. Results show that SAC achieves the fastest convergence and highest final returns due to its entropy-driven exploration and continuous Q-value feedback, while PPO learns more slowly but reliably with stable improvements. IMPALA fails to learn meaningful behavior, suggesting limitations of distributed off-policy correction in fine-grained continuous control. A redesigned reward formulation and sequence-based observation wrapper enable the Transformer-PPO agent to overcome earlier “safe” but ineffective behaviors, leading to active pursuit grounded in temporal motion patterns. Overall, the findings highlight the importance of representation, exploration strategy, and temporal modeling in dynamic navigation tasks, and suggest promising future directions combining Fourier encodings, attention mechanisms, and continuous-control RL for complex 3D pursuit problems.
