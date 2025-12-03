@@ -1,0 +1,2049 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.550">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Frog–Fly 3D Reinforcement Learning Environment (PPO)</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="frog_fly_files/libs/clipboard/clipboard.min.js"></script>
+<script src="frog_fly_files/libs/quarto-html/quarto.js"></script>
+<script src="frog_fly_files/libs/quarto-html/popper.min.js"></script>
+<script src="frog_fly_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="frog_fly_files/libs/quarto-html/anchor.min.js"></script>
+<link href="frog_fly_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="frog_fly_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="frog_fly_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="frog_fly_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="frog_fly_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Frog–Fly 3D Reinforcement Learning Environment (PPO)</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="frogfly-3d-reinforcement-learning-environment-ppo" class="level1">
+<h1>Frog–Fly 3D Reinforcement Learning Environment (PPO)</h1>
+<p>This environment simulates a frog navigating a bounded 3D space to catch a fly.<br>
+The agent observes continuous-valued states, produces continuous 3D actions, and learns using PPO.</p>
+<hr>
+<section id="environment-definition" class="level3">
+<h3 class="anchored" data-anchor-id="environment-definition">Environment Definition</h3>
+<p><span class="math display">\[
+\mathcal{S} = \{(x,y,z) \mid x,y,z \in [-1,1]\}
+\]</span></p>
+<p>At timestep (t):</p>
+<p><span class="math display">\[
+\mathbf{p}^{(t)}_f \in \mathcal{S}, \qquad
+\mathbf{p}^{(t)}_{\text{fly}} \in \mathcal{S}
+\]</span></p>
+<hr>
+</section>
+<section id="agent-dynamics" class="level3">
+<h3 class="anchored" data-anchor-id="agent-dynamics">Agent Dynamics</h3>
+<p>Action:</p>
+<p><span class="math display">\[
+\mathbf{a}_t \in [-1,1]^3
+\]</span></p>
+<p>Frog motion:</p>
+<p><span class="math display">\[
+\mathbf{p}^{(t+1)}_f =
+\mathrm{clip}\!\left(\mathbf{p}^{(t)}_f + \alpha \cdot \mathbf{a}_t,\,
+[-1,1]^3\right)
+\]</span></p>
+<p>Fly motion (stochastic):</p>
+<p><span class="math display">\[
+\mathbf{p}^{(t+1)}_{\text{fly}}=
+\mathrm{clip}\!\left(
+\mathbf{p}^{(t)}_{\text{fly}} +
+v_{\text{fly}}\cdot\frac{\epsilon}{\|\epsilon\|},\,
+[-1,1]^3\right),
+\qquad
+\epsilon\sim\mathcal{N}(0,I)
+\]</span></p>
+<hr>
+</section>
+<section id="observation-space" class="level3">
+<h3 class="anchored" data-anchor-id="observation-space">Observation Space</h3>
+<p><span class="math display">\[
+\mathbf{s}_t =
+[
+\mathbf{p}^{(t)}_f,\,
+\mathbf{p}^{(t)}_{\text{fly}},\,
+\mathbf{p}^{(t)}_{\text{fly}}-\mathbf{p}^{(t)}_f,\,
+PE(\mathbf{p}^{(t)}_f),\,
+PE(\mathbf{p}^{(t)}_{\text{fly}})
+]
+\]</span></p>
+<p>Positional encoding:</p>
+<p><span class="math display">\[
+PE(\mathbf{p}) =
+[
+\sin(\omega_k x),\cos(\omega_k x),\;
+\sin(\omega_k y),\cos(\omega_k y),\;
+\sin(\omega_k z),\cos(\omega_k z)
+]_{k=1}^{K}
+\]</span></p>
+<hr>
+</section>
+<section id="action-space" class="level3">
+<h3 class="anchored" data-anchor-id="action-space">Action Space</h3>
+<p><span class="math display">\[
+\mathcal{A} = [-1,1]^3
+\]</span></p>
+<p>The policy outputs a continuous displacement vector for movement.</p>
+<hr>
+</section>
+<section id="reward-function" class="level3">
+<h3 class="anchored" data-anchor-id="reward-function">Reward Function</h3>
+<p>Distance:</p>
+<p><span class="math display">\[
+d_t = \|\mathbf{p}^{(t)}_{\text{fly}} - \mathbf{p}^{(t)}_{f}\|
+\]</span></p>
+<p>Reward shaping:</p>
+<p><span class="math display">\[
+r_t =
+\begin{cases}
+-\,d_t, &amp; \text{not caught},\\[6pt]
+10 - d_t, &amp; \text{if } d_t &lt; \delta.
+\end{cases}
+\]</span></p>
+<p>Goal → minimize distance + catch fly efficiently.</p>
+<hr>
+</section>
+</section>
+<section id="ppo-objective" class="level1">
+<h1>PPO Objective</h1>
+<p>Probability ratio:</p>
+<p><span class="math display">\[
+r_t(\theta) =
+\dfrac{\pi_\theta(a_t\,|\,s_t)}
+      {\pi_{\theta_{\text{old}}}(a_t\,|\,s_t)}
+\]</span></p>
+<p>Advantage:</p>
+<p><span class="math display">\[
+A_t =
+\sum_{k=0}^{T-t} \gamma^k r_{t+k} -
+V_\phi(s_t)
+\]</span></p>
+<p>Clipped surrogate:</p>
+<p><span class="math display">\[
+J(\theta) =
+\mathbb{E}_t \Big[
+\min(
+r_t(\theta)A_t,\,
+\text{clip}(r_t(\theta),1-\epsilon,1+\epsilon)A_t
+)\Big]
+\]</span></p>
+<p>Value loss:</p>
+<p><span class="math display">\[
+L_V(\phi)=\mathbb{E}_t[(V_\phi(s_t)-R_t)^2]
+\]</span></p>
+<p>Final optimization:</p>
+<p><span class="math display">\[
+\max_\theta J(\theta), \qquad \min_\phi L_V(\phi)
+\]</span></p>
+<hr>
+<section id="mdp-summary" class="level3">
+<h3 class="anchored" data-anchor-id="mdp-summary">MDP Summary</h3>
+<table class="table">
+<thead>
+<tr class="header">
+<th>Element</th>
+<th>Definition</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>State (s_t)</td>
+<td>positions + relative vector + positional encodings</td>
+</tr>
+<tr class="even">
+<td>Action (a_t)</td>
+<td>continuous 3D movement vector</td>
+</tr>
+<tr class="odd">
+<td>Reward (r_t)</td>
+<td>shaped distance + capture bonus</td>
+</tr>
+<tr class="even">
+<td>Goal</td>
+<td>catch fly efficiently</td>
+</tr>
+<tr class="odd">
+<td>Algorithm</td>
+<td>PPO</td>
+</tr>
+</tbody>
+</table>
+<div id="cell-1" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> matplotlib <span class="im">import</span> animation</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> mpl_toolkits.mplot3d <span class="im">import</span> Axes3D  <span class="co"># noqa: F401 (needed for 3D)</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> gymnasium <span class="im">as</span> gym</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> gymnasium <span class="im">import</span> spaces</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ray</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ray.rllib.algorithms.ppo <span class="im">import</span> PPOConfig</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-2" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> positional_encoding_3d(pos, num_freqs<span class="op">=</span><span class="dv">4</span>, max_freq<span class="op">=</span><span class="fl">10.0</span>):</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co">    pos: np.array shape (3,) with (x, y, z) in [-space_size, space_size].</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns: encoding vector of shape (3 * 2 * num_freqs,)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    pos <span class="op">=</span> np.asarray(pos, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> pos.shape <span class="op">==</span> (<span class="dv">3</span>,)</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    freqs <span class="op">=</span> np.linspace(<span class="fl">1.0</span>, max_freq, num_freqs)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    enc <span class="op">=</span> []</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> coord <span class="kw">in</span> pos:            <span class="co"># x, y, z</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> f <span class="kw">in</span> freqs:</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>            enc.append(np.sin(f <span class="op">*</span> coord))</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>            enc.append(np.cos(f <span class="op">*</span> coord))</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.array(enc, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> FrogFly3DEnv(gym.Env):</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co">    3D continuous environment:</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co">    - Frog (agent) moves to catch a moving fly.</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co">    - Observations: positions + relative vector + positional encodings.</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    metadata <span class="op">=</span> {<span class="st">"render_modes"</span>: [<span class="st">"human"</span>], <span class="st">"render_fps"</span>: <span class="dv">30</span>}</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>, config<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().<span class="fu">__init__</span>()</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> config <span class="kw">is</span> <span class="va">None</span>:</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            config <span class="op">=</span> {}</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.space_size <span class="op">=</span> <span class="bu">float</span>(config.get(<span class="st">"space_size"</span>, <span class="fl">1.0</span>))</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.step_size <span class="op">=</span> <span class="bu">float</span>(config.get(<span class="st">"step_size"</span>, <span class="fl">0.1</span>))</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fly_speed <span class="op">=</span> <span class="bu">float</span>(config.get(<span class="st">"fly_speed"</span>, <span class="fl">0.05</span>))</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.catch_radius <span class="op">=</span> <span class="bu">float</span>(config.get(<span class="st">"catch_radius"</span>, <span class="fl">0.15</span>))</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.max_steps <span class="op">=</span> <span class="bu">int</span>(config.get(<span class="st">"max_steps"</span>, <span class="dv">200</span>))</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.num_freqs <span class="op">=</span> <span class="bu">int</span>(config.get(<span class="st">"num_freqs"</span>, <span class="dv">4</span>))</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.use_positional_encodings <span class="op">=</span> <span class="bu">bool</span>(</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>            config.get(<span class="st">"use_positional_encodings"</span>, <span class="va">True</span>)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Action = 3D movement in [-1, 1]^3</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.action_space <span class="op">=</span> spaces.Box(</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>            low<span class="op">=-</span><span class="fl">1.0</span>, high<span class="op">=</span><span class="fl">1.0</span>, shape<span class="op">=</span>(<span class="dv">3</span>,), dtype<span class="op">=</span>np.float32</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Observation components</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a>        <span class="co"># frog_pos (3) + fly_pos (3) + rel (3) = 9</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a>        base_dim <span class="op">=</span> <span class="dv">9</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.use_positional_encodings:</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>            pe_dim <span class="op">=</span> <span class="dv">3</span> <span class="op">*</span> <span class="dv">2</span> <span class="op">*</span> <span class="va">self</span>.num_freqs  <span class="co"># per position</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>            obs_dim <span class="op">=</span> base_dim <span class="op">+</span> <span class="dv">2</span> <span class="op">*</span> pe_dim</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>        <span class="cf">else</span>:</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>            obs_dim <span class="op">=</span> base_dim</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.observation_space <span class="op">=</span> spaces.Box(</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>            low<span class="op">=-</span><span class="fl">5.0</span>, high<span class="op">=</span><span class="fl">5.0</span>, shape<span class="op">=</span>(obs_dim,), dtype<span class="op">=</span>np.float32</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.frog_pos <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fly_pos <span class="op">=</span> <span class="va">None</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.steps <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------- Helpers ----------</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _sample_position(<span class="va">self</span>):</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.random.uniform(</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a>            low<span class="op">=-</span><span class="va">self</span>.space_size,</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>            high<span class="op">=</span><span class="va">self</span>.space_size,</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>            size<span class="op">=</span>(<span class="dv">3</span>,),</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        ).astype(np.float32)</span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _clip_position(<span class="va">self</span>, pos):</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.clip(pos, <span class="op">-</span><span class="va">self</span>.space_size, <span class="va">self</span>.space_size).astype(np.float32)</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _get_obs(<span class="va">self</span>):</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        rel <span class="op">=</span> <span class="va">self</span>.fly_pos <span class="op">-</span> <span class="va">self</span>.frog_pos</span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        parts <span class="op">=</span> [<span class="va">self</span>.frog_pos, <span class="va">self</span>.fly_pos, rel]</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="va">self</span>.use_positional_encodings:</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>            frog_pe <span class="op">=</span> positional_encoding_3d(<span class="va">self</span>.frog_pos, <span class="va">self</span>.num_freqs)</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>            fly_pe <span class="op">=</span> positional_encoding_3d(<span class="va">self</span>.fly_pos, <span class="va">self</span>.num_freqs)</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>            parts.extend([frog_pe, fly_pe])</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> np.concatenate(parts, axis<span class="op">=</span><span class="dv">0</span>).astype(np.float32)</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> _get_distance(<span class="va">self</span>):</span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> <span class="bu">float</span>(np.linalg.norm(<span class="va">self</span>.fly_pos <span class="op">-</span> <span class="va">self</span>.frog_pos))</span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ---------- Gymnasium API ----------</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> reset(<span class="va">self</span>, seed<span class="op">=</span><span class="va">None</span>, options<span class="op">=</span><span class="va">None</span>):</span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>        <span class="bu">super</span>().reset(seed<span class="op">=</span>seed)</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.steps <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.frog_pos <span class="op">=</span> <span class="va">self</span>._sample_position()</span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fly_pos <span class="op">=</span> <span class="va">self</span>._sample_position()</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a>        obs <span class="op">=</span> <span class="va">self</span>._get_obs()</span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a>        info <span class="op">=</span> {}</span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> obs, info</span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> step(<span class="va">self</span>, action):</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.steps <span class="op">+=</span> <span class="dv">1</span></span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>        action <span class="op">=</span> np.asarray(action, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>        action <span class="op">=</span> np.clip(action, <span class="op">-</span><span class="fl">1.0</span>, <span class="fl">1.0</span>)</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Frog moves</span></span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.frog_pos <span class="op">=</span> <span class="va">self</span>.frog_pos <span class="op">+</span> <span class="va">self</span>.step_size <span class="op">*</span> action</span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.frog_pos <span class="op">=</span> <span class="va">self</span>._clip_position(<span class="va">self</span>.frog_pos)</span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Fly moves randomly</span></span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>        fly_dir <span class="op">=</span> np.random.normal(size<span class="op">=</span>(<span class="dv">3</span>,)).astype(np.float32)</span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>        fly_dir <span class="op">/=</span> np.linalg.norm(fly_dir) <span class="op">+</span> <span class="fl">1e-8</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fly_pos <span class="op">=</span> <span class="va">self</span>.fly_pos <span class="op">+</span> <span class="va">self</span>.fly_speed <span class="op">*</span> fly_dir</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>        <span class="va">self</span>.fly_pos <span class="op">=</span> <span class="va">self</span>._clip_position(<span class="va">self</span>.fly_pos)</span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>        dist <span class="op">=</span> <span class="va">self</span>._get_distance()</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>        caught <span class="op">=</span> dist <span class="op">&lt;</span> <span class="va">self</span>.catch_radius</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Reward shaping: closer is better + bonus for catch</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>        reward <span class="op">=</span> <span class="op">-</span>dist</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> caught:</span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>            reward <span class="op">+=</span> <span class="fl">10.0</span></span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a>        terminated <span class="op">=</span> caught</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>        truncated <span class="op">=</span> <span class="va">self</span>.steps <span class="op">&gt;=</span> <span class="va">self</span>.max_steps</span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>        obs <span class="op">=</span> <span class="va">self</span>._get_obs()</span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>        info <span class="op">=</span> {<span class="st">"distance"</span>: dist, <span class="st">"caught"</span>: caught}</span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> obs, reward, terminated, truncated, info</span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> render(<span class="va">self</span>):</span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Step </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>steps<span class="sc">}</span><span class="ss"> | "</span></span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Frog: </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>frog_pos<span class="sc">}</span><span class="ss"> | Fly: </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>fly_pos<span class="sc">}</span><span class="ss"> | "</span></span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"Dist: </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>_get_distance()<span class="sc">:.3f}</span><span class="ss">"</span></span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> close(<span class="va">self</span>):</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>        <span class="cf">pass</span></span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-3" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>ray.shutdown()</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>ray.init(ignore_reinit_error<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>env_config <span class="op">=</span> {</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"space_size"</span>: <span class="fl">1.0</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"step_size"</span>: <span class="fl">0.1</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"fly_speed"</span>: <span class="fl">0.05</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"catch_radius"</span>: <span class="fl">0.15</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"max_steps"</span>: <span class="dv">200</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"num_freqs"</span>: <span class="dv">4</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"use_positional_encodings"</span>: <span class="va">True</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>config <span class="op">=</span> (</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    PPOConfig()</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># ⬇️ IMPORTANT: pass the *class* here</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    .environment(env<span class="op">=</span>FrogFly3DEnv, env_config<span class="op">=</span>env_config)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    .framework(<span class="st">"torch"</span>)</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    .resources(num_gpus<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    .training(</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>{</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_hiddens"</span>: [<span class="dv">256</span>, <span class="dv">256</span>],</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_activation"</span>: <span class="st">"tanh"</span>,</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span><span class="fl">0.99</span>,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>        lr<span class="op">=</span><span class="fl">3e-4</span>,</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>algo <span class="op">=</span> config.build()</span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Algo built OK"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>2025-11-29 13:36:02,157 INFO worker.py:2023 -- Started a local Ray instance.
+(SingleAgentEnvRunner pid=79565) DeprecationWarning: `RLModule(config=[RLModuleConfig object])` has been deprecated. Use `RLModule(observation_space=.., action_space=.., inference_only=.., model_config=.., catalog_class=..)` instead. This will raise an error in the future!
+2025-11-29 13:36:05,182 WARNING rl_module.py:459 -- DeprecationWarning: `RLModule(config=[RLModuleConfig object])` has been deprecated. Use `RLModule(observation_space=.., action_space=.., inference_only=.., model_config=.., catalog_class=..)` instead. This will raise an error in the future!
+2025-11-29 13:36:06,279 WARNING util.py:61 -- Install gputil for GPU system monitoring.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Algo built OK</code></pre>
+</div>
+</div>
+<div id="cell-4" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>num_iterations <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>mean_rewards <span class="op">=</span> []</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>mean_lengths <span class="op">=</span> []</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(num_iterations):</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> algo.train()</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Newer RLlib: metrics under "env_runners"</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="st">"env_runners"</span> <span class="kw">in</span> result:</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        env_metrics <span class="op">=</span> result[<span class="st">"env_runners"</span>]</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> env_metrics.get(<span class="st">"episode_return_mean"</span>, np.nan)</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> env_metrics.get(<span class="st">"episode_len_mean"</span>, np.nan)</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Older RLlib: metrics at top level</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> result.get(<span class="st">"episode_reward_mean"</span>, np.nan)</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> result.get(<span class="st">"episode_len_mean"</span>, np.nan)</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    mean_rewards.append(mean_r)</span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    mean_lengths.append(mean_l)</span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"Iter </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">:03d}</span><span class="ss"> | "</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"reward_mean = </span><span class="sc">{</span>mean_r<span class="sc">:.3f}</span><span class="ss"> | "</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"len_mean = </span><span class="sc">{</span>mean_l<span class="sc">:.2f}</span><span class="ss">"</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>(pid=gcs_server) [2025-11-29 13:36:31,515 E 79554 63203182] (gcs_server) gcs_server.cc:303: Failed to establish connection to the event+metrics exporter agent. Events and metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(raylet) [2025-11-29 13:36:32,106 E 79558 63203272] (raylet) main.cc:979: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(SingleAgentEnvRunner pid=79565) [2025-11-29 13:36:32,728 E 79565 63203522] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+[2025-11-29 13:36:32,894 E 79225 63203322] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Iter 001 | reward_mean = -280.136 | len_mean = 193.20
+Iter 002 | reward_mean = -257.787 | len_mean = 188.83
+Iter 003 | reward_mean = -271.765 | len_mean = 189.60
+Iter 004 | reward_mean = -262.372 | len_mean = 185.76
+Iter 005 | reward_mean = -237.619 | len_mean = 180.16
+Iter 006 | reward_mean = -243.282 | len_mean = 184.44
+Iter 007 | reward_mean = -248.877 | len_mean = 184.32
+Iter 008 | reward_mean = -217.721 | len_mean = 176.64
+Iter 009 | reward_mean = -232.963 | len_mean = 184.24
+Iter 010 | reward_mean = -229.211 | len_mean = 186.06
+Iter 011 | reward_mean = -225.733 | len_mean = 185.80
+Iter 012 | reward_mean = -212.468 | len_mean = 182.46
+Iter 013 | reward_mean = -220.304 | len_mean = 192.44
+Iter 014 | reward_mean = -171.321 | len_mean = 168.72
+Iter 015 | reward_mean = -143.614 | len_mean = 148.10
+Iter 016 | reward_mean = -181.501 | len_mean = 167.68
+Iter 017 | reward_mean = -202.537 | len_mean = 177.20
+Iter 018 | reward_mean = -179.273 | len_mean = 170.40
+Iter 019 | reward_mean = -163.838 | len_mean = 156.62
+Iter 020 | reward_mean = -185.515 | len_mean = 170.26
+Iter 021 | reward_mean = -167.739 | len_mean = 170.94
+Iter 022 | reward_mean = -154.123 | len_mean = 166.72
+Iter 023 | reward_mean = -157.535 | len_mean = 170.56
+Iter 024 | reward_mean = -160.715 | len_mean = 169.40
+Iter 025 | reward_mean = -159.362 | len_mean = 164.58
+Iter 026 | reward_mean = -160.972 | len_mean = 163.96
+Iter 027 | reward_mean = -163.976 | len_mean = 169.08
+Iter 028 | reward_mean = -150.060 | len_mean = 169.66
+Iter 029 | reward_mean = -148.374 | len_mean = 166.76
+Iter 030 | reward_mean = -155.160 | len_mean = 166.90
+Iter 031 | reward_mean = -122.172 | len_mean = 145.50
+Iter 032 | reward_mean = -117.846 | len_mean = 146.14
+Iter 033 | reward_mean = -133.404 | len_mean = 149.48
+Iter 034 | reward_mean = -118.152 | len_mean = 140.78
+Iter 035 | reward_mean = -123.292 | len_mean = 148.34
+Iter 036 | reward_mean = -125.480 | len_mean = 151.60
+Iter 037 | reward_mean = -120.202 | len_mean = 153.14
+Iter 038 | reward_mean = -137.325 | len_mean = 154.24
+Iter 039 | reward_mean = -148.558 | len_mean = 165.14
+Iter 040 | reward_mean = -123.699 | len_mean = 149.68
+Iter 041 | reward_mean = -122.093 | len_mean = 149.06
+Iter 042 | reward_mean = -116.327 | len_mean = 144.42
+Iter 043 | reward_mean = -126.043 | len_mean = 141.88
+Iter 044 | reward_mean = -131.413 | len_mean = 144.92
+Iter 045 | reward_mean = -132.649 | len_mean = 159.84
+Iter 046 | reward_mean = -144.704 | len_mean = 170.88
+Iter 047 | reward_mean = -139.036 | len_mean = 160.12
+Iter 048 | reward_mean = -109.659 | len_mean = 139.10
+Iter 049 | reward_mean = -108.098 | len_mean = 139.84
+Iter 050 | reward_mean = -119.924 | len_mean = 152.20
+Iter 051 | reward_mean = -116.700 | len_mean = 151.30
+Iter 052 | reward_mean = -101.960 | len_mean = 131.10
+Iter 053 | reward_mean = -105.038 | len_mean = 131.24
+Iter 054 | reward_mean = -114.915 | len_mean = 137.64
+Iter 055 | reward_mean = -122.921 | len_mean = 143.12
+Iter 056 | reward_mean = -123.364 | len_mean = 156.14
+Iter 057 | reward_mean = -108.988 | len_mean = 142.32
+Iter 058 | reward_mean = -109.757 | len_mean = 139.68
+Iter 059 | reward_mean = -111.823 | len_mean = 140.76
+Iter 060 | reward_mean = -119.580 | len_mean = 151.34
+Iter 061 | reward_mean = -114.780 | len_mean = 157.32
+Iter 062 | reward_mean = -103.848 | len_mean = 144.78
+Iter 063 | reward_mean = -104.461 | len_mean = 146.02
+Iter 064 | reward_mean = -84.851 | len_mean = 129.88
+Iter 065 | reward_mean = -81.150 | len_mean = 127.86
+Iter 066 | reward_mean = -99.303 | len_mean = 145.96
+Iter 067 | reward_mean = -97.242 | len_mean = 137.60
+Iter 068 | reward_mean = -79.762 | len_mean = 120.38
+Iter 069 | reward_mean = -97.079 | len_mean = 134.78
+Iter 070 | reward_mean = -96.656 | len_mean = 140.84
+Iter 071 | reward_mean = -93.905 | len_mean = 130.24
+Iter 072 | reward_mean = -86.365 | len_mean = 124.72
+Iter 073 | reward_mean = -92.572 | len_mean = 134.16
+Iter 074 | reward_mean = -94.803 | len_mean = 136.32
+Iter 075 | reward_mean = -94.494 | len_mean = 136.50
+Iter 076 | reward_mean = -71.772 | len_mean = 115.74
+Iter 077 | reward_mean = -71.373 | len_mean = 114.52
+Iter 078 | reward_mean = -83.761 | len_mean = 129.50
+Iter 079 | reward_mean = -89.387 | len_mean = 131.64
+Iter 080 | reward_mean = -61.892 | len_mean = 101.68
+Iter 081 | reward_mean = -62.109 | len_mean = 95.68
+Iter 082 | reward_mean = -63.008 | len_mean = 100.76
+Iter 083 | reward_mean = -71.658 | len_mean = 114.60
+Iter 084 | reward_mean = -67.496 | len_mean = 112.36
+Iter 085 | reward_mean = -59.632 | len_mean = 98.16
+Iter 086 | reward_mean = -81.984 | len_mean = 120.98
+Iter 087 | reward_mean = -78.016 | len_mean = 120.56
+Iter 088 | reward_mean = -67.501 | len_mean = 113.02
+Iter 089 | reward_mean = -63.730 | len_mean = 109.50
+Iter 090 | reward_mean = -64.863 | len_mean = 107.64
+Iter 091 | reward_mean = -64.893 | len_mean = 110.98
+Iter 092 | reward_mean = -60.773 | len_mean = 103.28
+Iter 093 | reward_mean = -58.753 | len_mean = 98.26
+Iter 094 | reward_mean = -79.554 | len_mean = 130.32
+Iter 095 | reward_mean = -68.844 | len_mean = 110.18
+Iter 096 | reward_mean = -60.525 | len_mean = 107.84
+Iter 097 | reward_mean = -56.091 | len_mean = 99.26
+Iter 098 | reward_mean = -60.312 | len_mean = 108.50
+Iter 099 | reward_mean = -65.690 | len_mean = 116.06
+Iter 100 | reward_mean = -59.570 | len_mean = 104.82
+Iter 101 | reward_mean = -55.072 | len_mean = 99.70
+Iter 102 | reward_mean = -62.585 | len_mean = 104.02
+Iter 103 | reward_mean = -59.988 | len_mean = 107.32
+Iter 104 | reward_mean = -58.629 | len_mean = 106.34
+Iter 105 | reward_mean = -58.460 | len_mean = 105.80
+Iter 106 | reward_mean = -60.968 | len_mean = 108.48
+Iter 107 | reward_mean = -48.632 | len_mean = 93.68
+Iter 108 | reward_mean = -48.080 | len_mean = 92.60
+Iter 109 | reward_mean = -59.457 | len_mean = 100.30
+Iter 110 | reward_mean = -50.277 | len_mean = 92.44
+Iter 111 | reward_mean = -58.974 | len_mean = 106.02
+Iter 112 | reward_mean = -39.659 | len_mean = 78.90
+Iter 113 | reward_mean = -48.965 | len_mean = 90.64
+Iter 114 | reward_mean = -51.238 | len_mean = 95.80
+Iter 115 | reward_mean = -53.729 | len_mean = 96.90
+Iter 116 | reward_mean = -56.180 | len_mean = 102.54
+Iter 117 | reward_mean = -50.480 | len_mean = 98.16
+Iter 118 | reward_mean = -49.361 | len_mean = 97.32
+Iter 119 | reward_mean = -44.230 | len_mean = 86.38
+Iter 120 | reward_mean = -40.775 | len_mean = 77.16
+Iter 121 | reward_mean = -43.663 | len_mean = 91.02
+Iter 122 | reward_mean = -42.642 | len_mean = 85.52
+Iter 123 | reward_mean = -44.597 | len_mean = 83.26
+Iter 124 | reward_mean = -47.470 | len_mean = 83.38
+Iter 125 | reward_mean = -35.117 | len_mean = 71.04
+Iter 126 | reward_mean = -50.717 | len_mean = 100.14
+Iter 127 | reward_mean = -38.611 | len_mean = 83.96
+Iter 128 | reward_mean = -41.918 | len_mean = 85.94
+Iter 129 | reward_mean = -39.525 | len_mean = 79.64
+Iter 130 | reward_mean = -43.633 | len_mean = 84.44
+Iter 131 | reward_mean = -36.107 | len_mean = 76.94
+Iter 132 | reward_mean = -42.766 | len_mean = 85.22
+Iter 133 | reward_mean = -40.414 | len_mean = 78.76
+Iter 134 | reward_mean = -41.257 | len_mean = 82.42
+Iter 135 | reward_mean = -35.482 | len_mean = 72.84
+Iter 136 | reward_mean = -28.120 | len_mean = 67.54
+Iter 137 | reward_mean = -43.969 | len_mean = 89.68
+Iter 138 | reward_mean = -35.396 | len_mean = 74.34
+Iter 139 | reward_mean = -41.650 | len_mean = 83.06
+Iter 140 | reward_mean = -28.823 | len_mean = 69.28
+Iter 141 | reward_mean = -39.175 | len_mean = 84.70
+Iter 142 | reward_mean = -33.875 | len_mean = 74.02
+Iter 143 | reward_mean = -41.760 | len_mean = 85.46
+Iter 144 | reward_mean = -33.273 | len_mean = 77.90
+Iter 145 | reward_mean = -37.481 | len_mean = 74.90
+Iter 146 | reward_mean = -38.930 | len_mean = 80.92
+Iter 147 | reward_mean = -35.307 | len_mean = 78.92
+Iter 148 | reward_mean = -34.670 | len_mean = 71.92
+Iter 149 | reward_mean = -26.946 | len_mean = 63.28
+Iter 150 | reward_mean = -33.019 | len_mean = 78.12
+Iter 151 | reward_mean = -36.386 | len_mean = 72.94
+Iter 152 | reward_mean = -36.044 | len_mean = 80.58
+Iter 153 | reward_mean = -40.255 | len_mean = 82.94
+Iter 154 | reward_mean = -43.172 | len_mean = 89.90
+Iter 155 | reward_mean = -29.845 | len_mean = 70.54
+Iter 156 | reward_mean = -27.369 | len_mean = 64.76
+Iter 157 | reward_mean = -27.427 | len_mean = 65.02
+Iter 158 | reward_mean = -30.721 | len_mean = 72.14
+Iter 159 | reward_mean = -32.224 | len_mean = 75.14
+Iter 160 | reward_mean = -34.904 | len_mean = 75.80
+Iter 161 | reward_mean = -37.036 | len_mean = 70.28
+Iter 162 | reward_mean = -31.570 | len_mean = 73.78
+Iter 163 | reward_mean = -24.720 | len_mean = 60.34
+Iter 164 | reward_mean = -24.297 | len_mean = 61.64
+Iter 165 | reward_mean = -31.379 | len_mean = 63.14
+Iter 166 | reward_mean = -29.327 | len_mean = 70.14
+Iter 167 | reward_mean = -33.284 | len_mean = 71.54
+Iter 168 | reward_mean = -33.509 | len_mean = 74.78
+Iter 169 | reward_mean = -41.793 | len_mean = 81.90
+Iter 170 | reward_mean = -33.255 | len_mean = 74.14
+Iter 171 | reward_mean = -24.459 | len_mean = 59.46
+Iter 172 | reward_mean = -26.874 | len_mean = 62.60
+Iter 173 | reward_mean = -29.497 | len_mean = 67.60
+Iter 174 | reward_mean = -26.501 | len_mean = 65.74
+Iter 175 | reward_mean = -27.964 | len_mean = 59.82
+Iter 176 | reward_mean = -27.677 | len_mean = 61.04
+Iter 177 | reward_mean = -21.044 | len_mean = 52.64
+Iter 178 | reward_mean = -30.221 | len_mean = 68.36
+Iter 179 | reward_mean = -28.169 | len_mean = 67.94
+Iter 180 | reward_mean = -32.133 | len_mean = 65.56
+Iter 181 | reward_mean = -28.232 | len_mean = 65.50
+Iter 182 | reward_mean = -34.379 | len_mean = 77.50
+Iter 183 | reward_mean = -35.560 | len_mean = 79.60
+Iter 184 | reward_mean = -28.063 | len_mean = 62.62
+Iter 185 | reward_mean = -28.821 | len_mean = 68.44
+Iter 186 | reward_mean = -26.622 | len_mean = 68.04
+Iter 187 | reward_mean = -26.606 | len_mean = 67.12
+Iter 188 | reward_mean = -23.099 | len_mean = 62.26
+Iter 189 | reward_mean = -17.698 | len_mean = 47.02
+Iter 190 | reward_mean = -30.683 | len_mean = 74.80
+Iter 191 | reward_mean = -29.488 | len_mean = 69.78
+Iter 192 | reward_mean = -31.978 | len_mean = 75.82
+Iter 193 | reward_mean = -34.881 | len_mean = 79.44
+Iter 194 | reward_mean = -18.269 | len_mean = 50.36
+Iter 195 | reward_mean = -29.548 | len_mean = 64.70
+Iter 196 | reward_mean = -25.237 | len_mean = 62.82
+Iter 197 | reward_mean = -44.576 | len_mean = 86.90
+Iter 198 | reward_mean = -23.643 | len_mean = 60.92
+Iter 199 | reward_mean = -19.490 | len_mean = 47.86
+Iter 200 | reward_mean = -21.897 | len_mean = 51.70</code></pre>
+</div>
+</div>
+<div id="cell-5" class="cell" data-execution_count="21">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> torch</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> rollout_trajectory(env, policy_fn, max_steps<span class="op">=</span><span class="dv">200</span>):</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="co">    Run one episode and record frog &amp; fly positions.</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="co">    policy_fn: function(obs) -&gt; action (np.array of shape (3,))</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    obs, info <span class="op">=</span> env.reset()</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    frog_traj <span class="op">=</span> [env.frog_pos.copy()]</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    fly_traj <span class="op">=</span> [env.fly_pos.copy()]</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> t <span class="kw">in</span> <span class="bu">range</span>(max_steps):</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>        action <span class="op">=</span> policy_fn(obs)</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>        obs, reward, terminated, truncated, info <span class="op">=</span> env.step(action)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>        frog_traj.append(env.frog_pos.copy())</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>        fly_traj.append(env.fly_pos.copy())</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> terminated <span class="kw">or</span> truncated:</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>            <span class="cf">break</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> np.array(frog_traj), np.array(fly_traj)</span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> random_policy(obs, action_space):</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> action_space.sample()</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> trained_policy_factory(algo):</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co">    Build a policy(obs) function that uses the NEW RLlib API stack.</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="co">    It:</span></span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a><span class="co">      1. Calls rl_module.forward_inference(...)</span></span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a><span class="co">      2. Uses the module's inference distribution class</span></span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a><span class="co">      3. Samples a deterministic action for a single observation</span></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Single-agent PPO: this returns the default RLModule</span></span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    rl_module <span class="op">=</span> algo.get_module()</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># RLlib picks a default Distribution class from the action space</span></span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    <span class="co"># (TorchDiagGaussian for Box, TorchCategorical for Discrete, etc.)</span></span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    dist_cls <span class="op">=</span> rl_module.get_inference_action_dist_cls()</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> policy(obs):</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Ensure obs is float32 and batched</span></span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>        obs_np <span class="op">=</span> np.asarray(obs, dtype<span class="op">=</span>np.float32)</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>        batch <span class="op">=</span> {<span class="st">"obs"</span>: torch.from_numpy(obs_np).unsqueeze(<span class="dv">0</span>)}</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> torch.no_grad():</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>            out <span class="op">=</span> rl_module.forward_inference(batch)</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Case 1: some modules might already return final actions ---</span></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="st">"actions"</span> <span class="kw">in</span> out:</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>            actions <span class="op">=</span> out[<span class="st">"actions"</span>].detach().cpu().numpy()</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> actions[<span class="dv">0</span>]</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Case 2 (your case): PPO returns action_dist_inputs logits ---</span></span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>        logits <span class="op">=</span> out[<span class="st">"action_dist_inputs"</span>]</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Build a Distribution from logits, then make it deterministic</span></span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>        dist <span class="op">=</span> dist_cls.from_logits(logits)</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>        det_dist <span class="op">=</span> dist.to_deterministic()</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Sample a (deterministic) action, shape: [batch, action_dim]</span></span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>        actions <span class="op">=</span> det_dist.sample().detach().cpu().numpy()</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> actions[<span class="dv">0</span>]</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> policy</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> make_3d_gif(frog_traj, fly_traj, out_path, title<span class="op">=</span><span class="st">""</span>):</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a><span class="co">    frog_traj, fly_traj: arrays of shape (T, 3)</span></span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a><span class="co">    Saves a 3D animated GIF at out_path.</span></span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>    T <span class="op">=</span> frog_traj.shape[<span class="dv">0</span>]</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a>    fig <span class="op">=</span> plt.figure(figsize<span class="op">=</span>(<span class="dv">6</span>, <span class="dv">6</span>))</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>    ax <span class="op">=</span> fig.add_subplot(<span class="dv">111</span>, projection<span class="op">=</span><span class="st">'3d'</span>)</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>    lim <span class="op">=</span> <span class="fl">1.0</span></span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>    ax.set_xlim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>    ax.set_ylim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>    ax.set_zlim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(<span class="st">"X"</span>)</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(<span class="st">"Y"</span>)</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>    ax.set_zlabel(<span class="st">"Z"</span>)</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title)</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> update(frame):</span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>        ax.clear()</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>        ax.set_xlim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>        ax.set_ylim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>        ax.set_zlim(<span class="op">-</span>lim, lim)</span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>        ax.set_xlabel(<span class="st">"X"</span>)</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>        ax.set_ylabel(<span class="st">"Y"</span>)</span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a>        ax.set_zlabel(<span class="st">"Z"</span>)</span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>        ax.set_title(title)</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>        f <span class="op">=</span> frog_traj[:frame<span class="op">+</span><span class="dv">1</span>]</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>        fl <span class="op">=</span> fly_traj[:frame<span class="op">+</span><span class="dv">1</span>]</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>        ax.plot(f[:, <span class="dv">0</span>], f[:, <span class="dv">1</span>], f[:, <span class="dv">2</span>], lw<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"green"</span>, label<span class="op">=</span><span class="st">"Frog path"</span>)</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>        ax.plot(fl[:, <span class="dv">0</span>], fl[:, <span class="dv">1</span>], fl[:, <span class="dv">2</span>], lw<span class="op">=</span><span class="dv">2</span>, color<span class="op">=</span><span class="st">"red"</span>, label<span class="op">=</span><span class="st">"Fly path"</span>)</span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a>        ax.scatter(f[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>], f[<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>], f[<span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>], s<span class="op">=</span><span class="dv">50</span>, color<span class="op">=</span><span class="st">"green"</span>)</span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>        ax.scatter(fl[<span class="op">-</span><span class="dv">1</span>, <span class="dv">0</span>], fl[<span class="op">-</span><span class="dv">1</span>, <span class="dv">1</span>], fl[<span class="op">-</span><span class="dv">1</span>, <span class="dv">2</span>], s<span class="op">=</span><span class="dv">50</span>, color<span class="op">=</span><span class="st">"red"</span>)</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a>        ax.legend(loc<span class="op">=</span><span class="st">"upper left"</span>)</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> []</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>    anim <span class="op">=</span> animation.FuncAnimation(</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a>        fig, update, frames<span class="op">=</span>T, interval<span class="op">=</span><span class="dv">50</span>, blit<span class="op">=</span><span class="va">False</span></span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>    writer <span class="op">=</span> animation.PillowWriter(fps<span class="op">=</span><span class="dv">20</span>)</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>    anim.save(out_path, writer<span class="op">=</span>writer)</span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>    plt.close(fig)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-6" class="cell" data-execution_count="22">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Fresh env for recording</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>record_env <span class="op">=</span> FrogFly3DEnv(env_config)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># BEFORE: random frog vs fly</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>frog_before, fly_before <span class="op">=</span> rollout_trajectory(</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    record_env,</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    policy_fn<span class="op">=</span><span class="kw">lambda</span> obs: random_policy(obs, record_env.action_space),</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    max_steps<span class="op">=</span><span class="dv">200</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>make_3d_gif(</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>    frog_before,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    fly_before,</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>    out_path<span class="op">=</span><span class="st">"frog_fly_before.gif"</span>,</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">"Random Frog vs Fly (Before RL)"</span>,</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co"># AFTER: PPO-trained frog vs fly</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>trained_policy <span class="op">=</span> trained_policy_factory(algo)</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>frog_after, fly_after <span class="op">=</span> rollout_trajectory(</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    record_env,</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    policy_fn<span class="op">=</span>trained_policy,</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    max_steps<span class="op">=</span><span class="dv">200</span>,</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>make_3d_gif(</span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>    frog_after,</span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>    fly_after,</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>    out_path<span class="op">=</span><span class="st">"frog_fly_after.gif"</span>,</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">"PPO-Trained Frog vs Fly (After RL)"</span>,</span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved GIFs: frog_fly_before.gif, frog_fly_after.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Saved GIFs: frog_fly_before.gif, frog_fly_after.gif</code></pre>
+</div>
+</div>
+<div id="cell-7" class="cell" data-execution_count="23">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>iters <span class="op">=</span> np.arange(<span class="dv">1</span>, <span class="bu">len</span>(mean_rewards) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">4</span>))</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>plt.plot(iters, mean_rewards, label<span class="op">=</span><span class="st">"Mean Episode Reward"</span>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Training Iteration"</span>)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Reward"</span>)</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"FrogFly3D PPO: Reward Curve"</span>)</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>plt.show()</span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">4</span>))</span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>plt.plot(iters, mean_lengths, label<span class="op">=</span><span class="st">"Mean Episode Length"</span>)</span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Training Iteration"</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Episode Length (steps)"</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"FrogFly3D PPO: Episode Length Curve"</span>)</span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="frog_fly_files/figure-html/cell-8-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="frog_fly_files/figure-html/cell-8-output-2.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>SAC on FrogFly3DEnv (continuous)</p>
+<div id="cell-9" class="cell" data-execution_count="25">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ray.rllib.algorithms.registry <span class="im">import</span> ALGORITHMS</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">list</span>(ALGORITHMS.keys()))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>['APPO', 'BC', 'CQL', 'DQN', 'DreamerV3', 'IMPALA', 'IQL', 'MARWIL', 'PPO', 'SAC']</code></pre>
+</div>
+</div>
+<div id="cell-10" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> ray</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ray.rllib.algorithms.sac <span class="im">import</span> SACConfig</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>ray.shutdown()</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>ray.init(ignore_reinit_error<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>env_config <span class="op">=</span> {</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"space_size"</span>: <span class="fl">1.0</span>,</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"step_size"</span>: <span class="fl">0.1</span>,</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    <span class="st">"fly_speed"</span>: <span class="fl">0.05</span>,</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="st">"catch_radius"</span>: <span class="fl">0.15</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="st">"max_steps"</span>: <span class="dv">200</span>,</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="st">"num_freqs"</span>: <span class="dv">4</span>,</span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="st">"use_positional_encodings"</span>: <span class="va">True</span>,</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>sac_config <span class="op">=</span> (</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    SACConfig()</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    .environment(env<span class="op">=</span>FrogFly3DEnv, env_config<span class="op">=</span>env_config)</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    .framework(<span class="st">"torch"</span>)</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    .resources(num_gpus<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    .training(</span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span><span class="fl">0.99</span>,</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># reuse roughly the same MLP as PPO</span></span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>{</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_hiddens"</span>: [<span class="dv">256</span>, <span class="dv">256</span>],</span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_activation"</span>: <span class="st">"tanh"</span>,</span>
+<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb15-30"><a href="#cb15-30" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb15-31"><a href="#cb15-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-32"><a href="#cb15-32" aria-hidden="true" tabindex="-1"></a>sac_algo <span class="op">=</span> sac_config.build()</span>
+<span id="cb15-33"><a href="#cb15-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"SAC algo built OK"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>2025-11-29 14:28:24,252 INFO worker.py:2023 -- Started a local Ray instance.
+2025-11-29 14:28:24,883 WARNING sac.py:491 -- You are running SAC on the new API stack! This is the new default behavior for this algorithm. If you don't want to use the new API stack, set `config.api_stack(enable_rl_module_and_learner=False, enable_env_runner_and_connector_v2=False)`. For a detailed migration guide, see here: https://docs.ray.io/en/master/rllib/new-api-stack-migration-guide.html
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/rllib/algorithms/algorithm.py:525: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+`UnifiedLogger` will be removed in Ray 2.7.
+  return UnifiedLogger(config, logdir, loggers=None)
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `JsonLogger interface is deprecated in favor of the `ray.tune.json.JsonLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `CSVLogger interface is deprecated in favor of the `ray.tune.csv.CSVLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `TBXLogger interface is deprecated in favor of the `ray.tune.tensorboardx.TBXLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+2025-11-29 14:28:25,353 WARNING sac.py:491 -- You are running SAC on the new API stack! This is the new default behavior for this algorithm. If you don't want to use the new API stack, set `config.api_stack(enable_rl_module_and_learner=False, enable_env_runner_and_connector_v2=False)`. For a detailed migration guide, see here: https://docs.ray.io/en/master/rllib/new-api-stack-migration-guide.html
+2025-11-29 14:28:25,400 WARNING util.py:61 -- Install gputil for GPU system monitoring.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>SAC algo built OK</code></pre>
+</div>
+</div>
+<div id="cell-11" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>num_sac_iters <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>sac_mean_rewards <span class="op">=</span> []</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>sac_mean_lengths <span class="op">=</span> []</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(num_sac_iters):</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> sac_algo.train()</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="st">"env_runners"</span> <span class="kw">in</span> result:</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>        env_metrics <span class="op">=</span> result[<span class="st">"env_runners"</span>]</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> env_metrics.get(<span class="st">"episode_return_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> env_metrics.get(<span class="st">"episode_len_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> result.get(<span class="st">"episode_reward_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> result.get(<span class="st">"episode_len_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a>    sac_mean_rewards.append(mean_r)</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a>    sac_mean_lengths.append(mean_l)</span>
+<span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"SAC iter </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">:03d}</span><span class="ss"> | "</span></span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"reward_mean = </span><span class="sc">{</span>mean_r<span class="sc">:.3f}</span><span class="ss"> | "</span></span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"len_mean = </span><span class="sc">{</span>mean_l<span class="sc">:.2f}</span><span class="ss">"</span></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>SAC iter 001 | reward_mean = -275.629 | len_mean = 200.00
+SAC iter 002 | reward_mean = -297.758 | len_mean = 200.00
+SAC iter 003 | reward_mean = -281.161 | len_mean = 200.00
+SAC iter 004 | reward_mean = -279.918 | len_mean = 200.00
+SAC iter 005 | reward_mean = -261.644 | len_mean = 200.00
+SAC iter 006 | reward_mean = -261.644 | len_mean = 200.00
+SAC iter 007 | reward_mean = -277.736 | len_mean = 200.00
+SAC iter 008 | reward_mean = -266.602 | len_mean = 197.78
+SAC iter 009 | reward_mean = -266.602 | len_mean = 197.78
+SAC iter 010 | reward_mean = -248.724 | len_mean = 193.00
+SAC iter 011 | reward_mean = -248.724 | len_mean = 193.00
+SAC iter 012 | reward_mean = -265.969 | len_mean = 193.64
+SAC iter 013 | reward_mean = -265.969 | len_mean = 193.64
+SAC iter 014 | reward_mean = -269.267 | len_mean = 194.17
+SAC iter 015 | reward_mean = -269.267 | len_mean = 194.17
+SAC iter 016 | reward_mean = -275.957 | len_mean = 194.62
+SAC iter 017 | reward_mean = -275.957 | len_mean = 194.62
+SAC iter 018 | reward_mean = -275.624 | len_mean = 195.00
+SAC iter 019 | reward_mean = -275.624 | len_mean = 195.00
+SAC iter 020 | reward_mean = -270.959 | len_mean = 195.33
+SAC iter 021 | reward_mean = -270.959 | len_mean = 195.33
+SAC iter 022 | reward_mean = -263.958 | len_mean = 195.62
+SAC iter 023 | reward_mean = -263.958 | len_mean = 195.62
+SAC iter 024 | reward_mean = -262.442 | len_mean = 195.88
+SAC iter 025 | reward_mean = -253.849 | len_mean = 190.72
+SAC iter 026 | reward_mean = -253.849 | len_mean = 190.72
+SAC iter 027 | reward_mean = -237.331 | len_mean = 182.35
+SAC iter 028 | reward_mean = -237.331 | len_mean = 182.35
+SAC iter 029 | reward_mean = -232.780 | len_mean = 183.19
+SAC iter 030 | reward_mean = -232.780 | len_mean = 183.19
+SAC iter 031 | reward_mean = -227.899 | len_mean = 183.95
+SAC iter 032 | reward_mean = -227.899 | len_mean = 183.95
+SAC iter 033 | reward_mean = -225.750 | len_mean = 184.00
+SAC iter 034 | reward_mean = -220.351 | len_mean = 182.50
+SAC iter 035 | reward_mean = -220.351 | len_mean = 182.50
+SAC iter 036 | reward_mean = -215.556 | len_mean = 183.20
+SAC iter 037 | reward_mean = -215.556 | len_mean = 183.20
+SAC iter 038 | reward_mean = -209.520 | len_mean = 180.31
+SAC iter 039 | reward_mean = -209.520 | len_mean = 180.31
+SAC iter 040 | reward_mean = -207.500 | len_mean = 181.04
+SAC iter 041 | reward_mean = -207.500 | len_mean = 181.04
+SAC iter 042 | reward_mean = -205.629 | len_mean = 181.71
+SAC iter 043 | reward_mean = -205.629 | len_mean = 181.71
+SAC iter 044 | reward_mean = -203.689 | len_mean = 182.34
+SAC iter 045 | reward_mean = -203.689 | len_mean = 182.34
+SAC iter 046 | reward_mean = -195.608 | len_mean = 178.58
+SAC iter 047 | reward_mean = -195.608 | len_mean = 178.58
+SAC iter 048 | reward_mean = -192.870 | len_mean = 179.25
+SAC iter 049 | reward_mean = -192.870 | len_mean = 179.25
+SAC iter 050 | reward_mean = -185.020 | len_mean = 175.18
+SAC iter 051 | reward_mean = -180.072 | len_mean = 171.46
+SAC iter 052 | reward_mean = -180.072 | len_mean = 171.46
+SAC iter 053 | reward_mean = -177.922 | len_mean = 172.25
+SAC iter 054 | reward_mean = -177.922 | len_mean = 172.25
+SAC iter 055 | reward_mean = -167.375 | len_mean = 165.79
+SAC iter 056 | reward_mean = -156.162 | len_mean = 156.19
+SAC iter 057 | reward_mean = -156.162 | len_mean = 156.19
+SAC iter 058 | reward_mean = -155.624 | len_mean = 157.21
+SAC iter 059 | reward_mean = -155.624 | len_mean = 157.21
+SAC iter 060 | reward_mean = -154.664 | len_mean = 158.18
+SAC iter 061 | reward_mean = -148.673 | len_mean = 153.07
+SAC iter 062 | reward_mean = -148.673 | len_mean = 153.07
+SAC iter 063 | reward_mean = -146.805 | len_mean = 153.30
+SAC iter 064 | reward_mean = -145.647 | len_mean = 153.71
+SAC iter 065 | reward_mean = -142.561 | len_mean = 150.76
+SAC iter 066 | reward_mean = -142.561 | len_mean = 150.76
+SAC iter 067 | reward_mean = -138.930 | len_mean = 149.39
+SAC iter 068 | reward_mean = -137.775 | len_mean = 149.56
+SAC iter 069 | reward_mean = -135.654 | len_mean = 147.74
+SAC iter 070 | reward_mean = -135.654 | len_mean = 147.74
+SAC iter 071 | reward_mean = -132.845 | len_mean = 146.62
+SAC iter 072 | reward_mean = -132.845 | len_mean = 146.62
+SAC iter 073 | reward_mean = -132.212 | len_mean = 147.57
+SAC iter 074 | reward_mean = -130.159 | len_mean = 146.00
+SAC iter 075 | reward_mean = -126.144 | len_mean = 143.10
+SAC iter 076 | reward_mean = -118.390 | len_mean = 135.94
+SAC iter 077 | reward_mean = -114.925 | len_mean = 132.89
+SAC iter 078 | reward_mean = -114.925 | len_mean = 132.89
+SAC iter 079 | reward_mean = -110.961 | len_mean = 130.10
+SAC iter 080 | reward_mean = -107.939 | len_mean = 127.64
+SAC iter 081 | reward_mean = -106.922 | len_mean = 127.65
+SAC iter 082 | reward_mean = -102.935 | len_mean = 124.08
+SAC iter 083 | reward_mean = -102.935 | len_mean = 124.08
+SAC iter 084 | reward_mean = -101.134 | len_mean = 123.39
+SAC iter 085 | reward_mean = -97.248 | len_mean = 119.48
+SAC iter 086 | reward_mean = -91.643 | len_mean = 113.98
+SAC iter 087 | reward_mean = -89.676 | len_mean = 112.17
+SAC iter 088 | reward_mean = -86.586 | len_mean = 109.08
+SAC iter 089 | reward_mean = -84.145 | len_mean = 107.04
+SAC iter 090 | reward_mean = -83.719 | len_mean = 107.31
+SAC iter 091 | reward_mean = -80.222 | len_mean = 103.52
+SAC iter 092 | reward_mean = -79.625 | len_mean = 103.43
+SAC iter 093 | reward_mean = -75.501 | len_mean = 100.80
+SAC iter 094 | reward_mean = -66.927 | len_mean = 95.16
+SAC iter 095 | reward_mean = -62.982 | len_mean = 92.35
+SAC iter 096 | reward_mean = -62.982 | len_mean = 92.35
+SAC iter 097 | reward_mean = -55.323 | len_mean = 88.88
+SAC iter 098 | reward_mean = -40.685 | len_mean = 80.40
+SAC iter 099 | reward_mean = -30.178 | len_mean = 70.22
+SAC iter 100 | reward_mean = -24.717 | len_mean = 62.83
+SAC iter 101 | reward_mean = -17.440 | len_mean = 53.44
+SAC iter 102 | reward_mean = -13.980 | len_mean = 47.62
+SAC iter 103 | reward_mean = -13.596 | len_mean = 46.91
+SAC iter 104 | reward_mean = -11.276 | len_mean = 43.66
+SAC iter 105 | reward_mean = -9.519 | len_mean = 40.66
+SAC iter 106 | reward_mean = -8.905 | len_mean = 39.89
+SAC iter 107 | reward_mean = -6.881 | len_mean = 36.31
+SAC iter 108 | reward_mean = -5.508 | len_mean = 33.21
+SAC iter 109 | reward_mean = -5.461 | len_mean = 32.71
+SAC iter 110 | reward_mean = -4.655 | len_mean = 30.44
+SAC iter 111 | reward_mean = -3.577 | len_mean = 27.30
+SAC iter 112 | reward_mean = -3.359 | len_mean = 26.42
+SAC iter 113 | reward_mean = -3.329 | len_mean = 26.18
+SAC iter 114 | reward_mean = -3.318 | len_mean = 26.34
+SAC iter 115 | reward_mean = -3.351 | len_mean = 26.22
+SAC iter 116 | reward_mean = -3.153 | len_mean = 25.76
+SAC iter 117 | reward_mean = -2.599 | len_mean = 24.57
+SAC iter 118 | reward_mean = -2.603 | len_mean = 24.57
+SAC iter 119 | reward_mean = -1.457 | len_mean = 21.79
+SAC iter 120 | reward_mean = -1.668 | len_mean = 21.88
+SAC iter 121 | reward_mean = -1.634 | len_mean = 21.87
+SAC iter 122 | reward_mean = -2.268 | len_mean = 22.81
+SAC iter 123 | reward_mean = -2.342 | len_mean = 23.50
+SAC iter 124 | reward_mean = -2.506 | len_mean = 23.48
+SAC iter 125 | reward_mean = -2.269 | len_mean = 23.18
+SAC iter 126 | reward_mean = -1.654 | len_mean = 22.35
+SAC iter 127 | reward_mean = -1.153 | len_mean = 20.58
+SAC iter 128 | reward_mean = -1.040 | len_mean = 20.51
+SAC iter 129 | reward_mean = -0.716 | len_mean = 20.14
+SAC iter 130 | reward_mean = -0.493 | len_mean = 20.14
+SAC iter 131 | reward_mean = -0.093 | len_mean = 19.83
+SAC iter 132 | reward_mean = 0.199 | len_mean = 19.48
+SAC iter 133 | reward_mean = 0.879 | len_mean = 17.92
+SAC iter 134 | reward_mean = 1.041 | len_mean = 17.07
+SAC iter 135 | reward_mean = 1.072 | len_mean = 16.77
+SAC iter 136 | reward_mean = 1.319 | len_mean = 16.31
+SAC iter 137 | reward_mean = 2.089 | len_mean = 14.98
+SAC iter 138 | reward_mean = 2.606 | len_mean = 13.95
+SAC iter 139 | reward_mean = 2.489 | len_mean = 13.99
+SAC iter 140 | reward_mean = 2.567 | len_mean = 13.56
+SAC iter 141 | reward_mean = 2.590 | len_mean = 13.39
+SAC iter 142 | reward_mean = 2.911 | len_mean = 12.48
+SAC iter 143 | reward_mean = 2.632 | len_mean = 12.57
+SAC iter 144 | reward_mean = 2.732 | len_mean = 12.33
+SAC iter 145 | reward_mean = 2.673 | len_mean = 12.49
+SAC iter 146 | reward_mean = 2.416 | len_mean = 12.94
+SAC iter 147 | reward_mean = 2.502 | len_mean = 12.63
+SAC iter 148 | reward_mean = 2.695 | len_mean = 12.43
+SAC iter 149 | reward_mean = 2.376 | len_mean = 12.94
+SAC iter 150 | reward_mean = 2.183 | len_mean = 13.17
+SAC iter 151 | reward_mean = 2.208 | len_mean = 12.96
+SAC iter 152 | reward_mean = 2.062 | len_mean = 13.01
+SAC iter 153 | reward_mean = 2.075 | len_mean = 13.26
+SAC iter 154 | reward_mean = 1.972 | len_mean = 13.48
+SAC iter 155 | reward_mean = 1.757 | len_mean = 13.70
+SAC iter 156 | reward_mean = 1.787 | len_mean = 13.67
+SAC iter 157 | reward_mean = 1.743 | len_mean = 13.66
+SAC iter 158 | reward_mean = 1.687 | len_mean = 13.39
+SAC iter 159 | reward_mean = 1.943 | len_mean = 12.89
+SAC iter 160 | reward_mean = 1.961 | len_mean = 12.84
+SAC iter 161 | reward_mean = 1.677 | len_mean = 13.16
+SAC iter 162 | reward_mean = 1.912 | len_mean = 12.59
+SAC iter 163 | reward_mean = 1.839 | len_mean = 12.48
+SAC iter 164 | reward_mean = 2.087 | len_mean = 12.24
+SAC iter 165 | reward_mean = 2.059 | len_mean = 12.01
+SAC iter 166 | reward_mean = 2.070 | len_mean = 11.96
+SAC iter 167 | reward_mean = 1.918 | len_mean = 12.08
+SAC iter 168 | reward_mean = 1.876 | len_mean = 12.21
+SAC iter 169 | reward_mean = 1.991 | len_mean = 12.08
+SAC iter 170 | reward_mean = 1.909 | len_mean = 12.18
+SAC iter 171 | reward_mean = 1.901 | len_mean = 12.26
+SAC iter 172 | reward_mean = 1.597 | len_mean = 12.40
+SAC iter 173 | reward_mean = 2.040 | len_mean = 12.00
+SAC iter 174 | reward_mean = 2.177 | len_mean = 12.01
+SAC iter 175 | reward_mean = 2.122 | len_mean = 12.15
+SAC iter 176 | reward_mean = 2.243 | len_mean = 12.07
+SAC iter 177 | reward_mean = 2.444 | len_mean = 11.87
+SAC iter 178 | reward_mean = 2.304 | len_mean = 11.90
+SAC iter 179 | reward_mean = 2.598 | len_mean = 11.48
+SAC iter 180 | reward_mean = 2.647 | len_mean = 11.42
+SAC iter 181 | reward_mean = 2.409 | len_mean = 11.55
+SAC iter 182 | reward_mean = 2.532 | len_mean = 11.46
+SAC iter 183 | reward_mean = 2.369 | len_mean = 11.53
+SAC iter 184 | reward_mean = 2.212 | len_mean = 11.68
+SAC iter 185 | reward_mean = 2.088 | len_mean = 11.69
+SAC iter 186 | reward_mean = 1.758 | len_mean = 12.02
+SAC iter 187 | reward_mean = 1.877 | len_mean = 11.92
+SAC iter 188 | reward_mean = 1.759 | len_mean = 12.02
+SAC iter 189 | reward_mean = 1.633 | len_mean = 12.11
+SAC iter 190 | reward_mean = 1.898 | len_mean = 11.95
+SAC iter 191 | reward_mean = 1.777 | len_mean = 12.10
+SAC iter 192 | reward_mean = 1.686 | len_mean = 12.23
+SAC iter 193 | reward_mean = 1.689 | len_mean = 12.27
+SAC iter 194 | reward_mean = 1.445 | len_mean = 12.45
+SAC iter 195 | reward_mean = 1.312 | len_mean = 12.54
+SAC iter 196 | reward_mean = 1.099 | len_mean = 12.71
+SAC iter 197 | reward_mean = 1.334 | len_mean = 12.42
+SAC iter 198 | reward_mean = 1.619 | len_mean = 12.21
+SAC iter 199 | reward_mean = 1.398 | len_mean = 12.27
+SAC iter 200 | reward_mean = 1.470 | len_mean = 12.21</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>(pid=gcs_server) [2025-11-29 14:28:53,701 E 80697 63251200] (gcs_server) gcs_server.cc:303: Failed to establish connection to the event+metrics exporter agent. Events and metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(raylet) [2025-11-29 14:28:54,201 E 80701 63251290] (raylet) main.cc:979: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(pid=80713) [2025-11-29 14:28:54,788 E 80713 63251652] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+[2025-11-29 14:28:54,903 E 79225 63251341] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14</code></pre>
+</div>
+</div>
+<div id="cell-12" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fresh env for evaluation</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>record_env <span class="op">=</span> FrogFly3DEnv(env_config)</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>sac_policy <span class="op">=</span> trained_policy_factory(sac_algo)</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>frog_sac, fly_sac <span class="op">=</span> rollout_trajectory(</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    record_env,</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    policy_fn<span class="op">=</span>sac_policy,</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    max_steps<span class="op">=</span><span class="dv">200</span>,</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>make_3d_gif(</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    frog_sac,</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>    fly_sac,</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a>    out_path<span class="op">=</span><span class="st">"frog_fly_sac.gif"</span>,</span>
+<span id="cb21-16"><a href="#cb21-16" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">"SAC Frog vs Fly (Continuous)"</span>,</span>
+<span id="cb21-17"><a href="#cb21-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-18"><a href="#cb21-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-19"><a href="#cb21-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved GIF: frog_fly_sac.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Saved GIF: frog_fly_sac.gif</code></pre>
+</div>
+</div>
+<div id="cell-13" class="cell" data-execution_count="32">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ray.rllib.algorithms.impala <span class="im">import</span> IMPALAConfig</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>ray.shutdown()</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>ray.init(ignore_reinit_error<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>impala_config <span class="op">=</span> (</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a>    IMPALAConfig()</span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>    .environment(env<span class="op">=</span>FrogFly3DEnv, env_config<span class="op">=</span>env_config)</span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    .framework(<span class="st">"torch"</span>)</span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    .resources(num_gpus<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    .env_runners(</span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>        num_env_runners<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>        <span class="co"># you can tune this; smaller = more frequent updates, larger = more throughput</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>        rollout_fragment_length<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    .training(</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>        gamma<span class="op">=</span><span class="fl">0.99</span>,</span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a>        lr<span class="op">=</span><span class="fl">3e-4</span>,</span>
+<span id="cb23-19"><a href="#cb23-19" aria-hidden="true" tabindex="-1"></a>        train_batch_size<span class="op">=</span><span class="dv">2048</span>,   <span class="co"># or omit if this complains; defaults will kick in</span></span>
+<span id="cb23-20"><a href="#cb23-20" aria-hidden="true" tabindex="-1"></a>        model<span class="op">=</span>{</span>
+<span id="cb23-21"><a href="#cb23-21" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_hiddens"</span>: [<span class="dv">256</span>, <span class="dv">256</span>],</span>
+<span id="cb23-22"><a href="#cb23-22" aria-hidden="true" tabindex="-1"></a>            <span class="st">"fcnet_activation"</span>: <span class="st">"tanh"</span>,</span>
+<span id="cb23-23"><a href="#cb23-23" aria-hidden="true" tabindex="-1"></a>        },</span>
+<span id="cb23-24"><a href="#cb23-24" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb23-25"><a href="#cb23-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb23-26"><a href="#cb23-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-27"><a href="#cb23-27" aria-hidden="true" tabindex="-1"></a>impala_algo <span class="op">=</span> impala_config.build()</span>
+<span id="cb23-28"><a href="#cb23-28" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"IMPALA algo built OK"</span>)</span>
+<span id="cb23-29"><a href="#cb23-29" aria-hidden="true" tabindex="-1"></a></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>(pid=81038) [2025-11-29 14:52:34,556 E 81038 63265982] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14 [repeated 9x across cluster]
+2025-11-29 14:53:32,406 INFO worker.py:2023 -- Started a local Ray instance.
+2025-11-29 14:53:33,062 WARNING algorithm_config.py:5058 -- You are running IMPALA on the new API stack! This is the new default behavior for this algorithm. If you don't want to use the new API stack, set `config.api_stack(enable_rl_module_and_learner=False,enable_env_runner_and_connector_v2=False)`. For a detailed migration guide, see here: https://docs.ray.io/en/master/rllib/new-api-stack-migration-guide.html
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/rllib/algorithms/algorithm.py:525: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+`UnifiedLogger` will be removed in Ray 2.7.
+  return UnifiedLogger(config, logdir, loggers=None)
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `JsonLogger interface is deprecated in favor of the `ray.tune.json.JsonLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `CSVLogger interface is deprecated in favor of the `ray.tune.csv.CSVLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+/opt/anaconda3/envs/rl-project/lib/python3.10/site-packages/ray/tune/logger/unified.py:53: RayDeprecationWarning: This API is deprecated and may be removed in future Ray releases. You could suppress this warning by setting env variable PYTHONWARNINGS="ignore::DeprecationWarning"
+The `TBXLogger interface is deprecated in favor of the `ray.tune.tensorboardx.TBXLoggerCallback` interface and will be removed in Ray 2.7.
+  self._loggers.append(cls(self.config, self.logdir, self.trial))
+(SingleAgentEnvRunner pid=81115) DeprecationWarning: `RLModule(config=[RLModuleConfig object])` has been deprecated. Use `RLModule(observation_space=.., action_space=.., inference_only=.., model_config=.., catalog_class=..)` instead. This will raise an error in the future!
+(_WrappedExecutable pid=81116) Setting up process group for: env:// [rank=0, world_size=1]
+2025-11-29 14:53:38,576 WARNING util.py:61 -- Install gputil for GPU system monitoring.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>IMPALA algo built OK</code></pre>
+</div>
+</div>
+<div id="cell-14" class="cell" data-execution_count="33">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>num_impala_iters <span class="op">=</span> <span class="dv">200</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>impala_mean_rewards <span class="op">=</span> []</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>impala_mean_lengths <span class="op">=</span> []</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(num_impala_iters):</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    result <span class="op">=</span> impala_algo.train()</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="st">"env_runners"</span> <span class="kw">in</span> result:</span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>        env_metrics <span class="op">=</span> result[<span class="st">"env_runners"</span>]</span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> env_metrics.get(<span class="st">"episode_return_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> env_metrics.get(<span class="st">"episode_len_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>        mean_r <span class="op">=</span> result.get(<span class="st">"episode_reward_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>        mean_l <span class="op">=</span> result.get(<span class="st">"episode_len_mean"</span>, <span class="bu">float</span>(<span class="st">"nan"</span>))</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>    impala_mean_rewards.append(mean_r)</span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>    impala_mean_lengths.append(mean_l)</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(</span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"IMPALA iter </span><span class="sc">{</span>i<span class="op">+</span><span class="dv">1</span><span class="sc">:03d}</span><span class="ss"> | "</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"reward_mean = </span><span class="sc">{</span>mean_r<span class="sc">:.3f}</span><span class="ss"> | "</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"len_mean = </span><span class="sc">{</span>mean_l<span class="sc">:.2f}</span><span class="ss">"</span></span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>IMPALA iter 001 | reward_mean = -248.857 | len_mean = 192.28
+IMPALA iter 002 | reward_mean = -245.435 | len_mean = 179.89
+IMPALA iter 003 | reward_mean = -274.774 | len_mean = 188.38
+IMPALA iter 004 | reward_mean = -293.836 | len_mean = 191.97
+IMPALA iter 005 | reward_mean = -330.566 | len_mean = 191.55
+IMPALA iter 006 | reward_mean = -332.402 | len_mean = 193.67
+IMPALA iter 007 | reward_mean = -334.216 | len_mean = 196.26
+IMPALA iter 008 | reward_mean = -309.830 | len_mean = 194.06
+IMPALA iter 009 | reward_mean = -309.126 | len_mean = 193.15
+IMPALA iter 010 | reward_mean = -281.015 | len_mean = 188.69
+IMPALA iter 011 | reward_mean = -265.575 | len_mean = 192.67
+IMPALA iter 012 | reward_mean = -266.362 | len_mean = 186.09
+IMPALA iter 013 | reward_mean = -260.108 | len_mean = 188.43
+IMPALA iter 014 | reward_mean = -251.132 | len_mean = 180.46
+IMPALA iter 015 | reward_mean = -263.691 | len_mean = 187.27
+IMPALA iter 016 | reward_mean = -253.586 | len_mean = 184.70
+IMPALA iter 017 | reward_mean = -259.393 | len_mean = 185.29
+IMPALA iter 018 | reward_mean = -256.103 | len_mean = 190.05
+IMPALA iter 019 | reward_mean = -248.335 | len_mean = 185.81
+IMPALA iter 020 | reward_mean = -245.047 | len_mean = 179.33
+IMPALA iter 021 | reward_mean = -269.313 | len_mean = 188.83
+IMPALA iter 022 | reward_mean = -259.478 | len_mean = 183.66
+IMPALA iter 023 | reward_mean = -264.758 | len_mean = 191.41
+IMPALA iter 024 | reward_mean = -274.252 | len_mean = 192.10
+IMPALA iter 025 | reward_mean = -251.893 | len_mean = 183.29
+IMPALA iter 026 | reward_mean = -245.605 | len_mean = 182.93
+IMPALA iter 027 | reward_mean = -257.054 | len_mean = 185.81
+IMPALA iter 028 | reward_mean = -263.391 | len_mean = 185.21
+IMPALA iter 029 | reward_mean = -269.680 | len_mean = 186.04
+IMPALA iter 030 | reward_mean = -247.789 | len_mean = 187.27
+IMPALA iter 031 | reward_mean = -249.103 | len_mean = 179.64
+IMPALA iter 032 | reward_mean = -259.739 | len_mean = 185.74
+IMPALA iter 033 | reward_mean = -253.031 | len_mean = 187.25
+IMPALA iter 034 | reward_mean = -252.410 | len_mean = 184.51
+IMPALA iter 035 | reward_mean = -244.024 | len_mean = 186.28
+IMPALA iter 036 | reward_mean = -281.588 | len_mean = 191.59
+IMPALA iter 037 | reward_mean = -253.997 | len_mean = 183.28
+IMPALA iter 038 | reward_mean = -263.626 | len_mean = 187.42
+IMPALA iter 039 | reward_mean = -247.419 | len_mean = 181.11
+IMPALA iter 040 | reward_mean = -268.937 | len_mean = 191.08
+IMPALA iter 041 | reward_mean = -260.564 | len_mean = 195.08
+IMPALA iter 042 | reward_mean = -255.166 | len_mean = 182.14
+IMPALA iter 043 | reward_mean = -254.771 | len_mean = 192.80
+IMPALA iter 044 | reward_mean = -253.330 | len_mean = 183.34
+IMPALA iter 045 | reward_mean = -252.471 | len_mean = 186.92
+IMPALA iter 046 | reward_mean = -260.792 | len_mean = 186.82
+IMPALA iter 047 | reward_mean = -252.120 | len_mean = 187.39
+IMPALA iter 048 | reward_mean = -254.280 | len_mean = 186.12
+IMPALA iter 049 | reward_mean = -243.173 | len_mean = 178.76
+IMPALA iter 050 | reward_mean = -250.697 | len_mean = 183.24
+IMPALA iter 051 | reward_mean = -258.583 | len_mean = 190.59
+IMPALA iter 052 | reward_mean = -261.811 | len_mean = 191.89
+IMPALA iter 053 | reward_mean = -260.224 | len_mean = 180.30
+IMPALA iter 054 | reward_mean = -252.245 | len_mean = 182.63
+IMPALA iter 055 | reward_mean = -266.093 | len_mean = 188.75
+IMPALA iter 056 | reward_mean = -263.466 | len_mean = 186.54
+IMPALA iter 057 | reward_mean = -263.989 | len_mean = 193.34
+IMPALA iter 058 | reward_mean = -262.398 | len_mean = 182.92
+IMPALA iter 059 | reward_mean = -255.469 | len_mean = 186.55
+IMPALA iter 060 | reward_mean = -255.730 | len_mean = 185.47
+IMPALA iter 061 | reward_mean = -264.539 | len_mean = 188.28
+IMPALA iter 062 | reward_mean = -255.917 | len_mean = 186.39
+IMPALA iter 063 | reward_mean = -259.436 | len_mean = 187.87
+IMPALA iter 064 | reward_mean = -263.112 | len_mean = 184.83
+IMPALA iter 065 | reward_mean = -269.579 | len_mean = 189.86
+IMPALA iter 066 | reward_mean = -256.122 | len_mean = 185.74
+IMPALA iter 067 | reward_mean = -269.181 | len_mean = 192.46
+IMPALA iter 068 | reward_mean = -258.678 | len_mean = 188.41
+IMPALA iter 069 | reward_mean = -252.861 | len_mean = 183.78
+IMPALA iter 070 | reward_mean = -254.110 | len_mean = 184.90
+IMPALA iter 071 | reward_mean = -253.903 | len_mean = 181.70
+IMPALA iter 072 | reward_mean = -264.245 | len_mean = 188.35
+IMPALA iter 073 | reward_mean = -256.915 | len_mean = 190.34
+IMPALA iter 074 | reward_mean = -275.377 | len_mean = 194.46
+IMPALA iter 075 | reward_mean = -234.950 | len_mean = 175.04
+IMPALA iter 076 | reward_mean = -266.478 | len_mean = 186.74
+IMPALA iter 077 | reward_mean = -272.844 | len_mean = 188.70
+IMPALA iter 078 | reward_mean = -241.389 | len_mean = 183.34
+IMPALA iter 079 | reward_mean = -273.594 | len_mean = 190.78
+IMPALA iter 080 | reward_mean = -264.457 | len_mean = 186.91
+IMPALA iter 081 | reward_mean = -268.570 | len_mean = 190.54
+IMPALA iter 082 | reward_mean = -254.741 | len_mean = 185.65
+IMPALA iter 083 | reward_mean = -250.428 | len_mean = 186.64
+IMPALA iter 084 | reward_mean = -273.121 | len_mean = 192.89
+IMPALA iter 085 | reward_mean = -267.743 | len_mean = 189.32
+IMPALA iter 086 | reward_mean = -260.313 | len_mean = 189.27
+IMPALA iter 087 | reward_mean = -251.671 | len_mean = 183.45
+IMPALA iter 088 | reward_mean = -263.712 | len_mean = 188.16
+IMPALA iter 089 | reward_mean = -252.403 | len_mean = 188.46
+IMPALA iter 090 | reward_mean = -276.676 | len_mean = 191.59
+IMPALA iter 091 | reward_mean = -253.510 | len_mean = 187.08
+IMPALA iter 092 | reward_mean = -269.951 | len_mean = 190.74
+IMPALA iter 093 | reward_mean = -253.573 | len_mean = 185.91
+IMPALA iter 094 | reward_mean = -247.711 | len_mean = 184.23
+IMPALA iter 095 | reward_mean = -259.446 | len_mean = 192.57
+IMPALA iter 096 | reward_mean = -246.715 | len_mean = 186.67
+IMPALA iter 097 | reward_mean = -269.401 | len_mean = 189.30
+IMPALA iter 098 | reward_mean = -258.939 | len_mean = 190.27
+IMPALA iter 099 | reward_mean = -248.502 | len_mean = 183.43
+IMPALA iter 100 | reward_mean = -263.869 | len_mean = 185.42
+IMPALA iter 101 | reward_mean = -258.188 | len_mean = 188.73
+IMPALA iter 102 | reward_mean = -266.727 | len_mean = 191.33
+IMPALA iter 103 | reward_mean = -238.747 | len_mean = 184.18
+IMPALA iter 104 | reward_mean = -265.806 | len_mean = 187.76
+IMPALA iter 105 | reward_mean = -266.162 | len_mean = 186.38
+IMPALA iter 106 | reward_mean = -263.335 | len_mean = 188.45
+IMPALA iter 107 | reward_mean = -258.577 | len_mean = 187.14
+IMPALA iter 108 | reward_mean = -233.291 | len_mean = 186.84
+IMPALA iter 109 | reward_mean = -243.053 | len_mean = 183.58
+IMPALA iter 110 | reward_mean = -269.586 | len_mean = 193.87
+IMPALA iter 111 | reward_mean = -262.682 | len_mean = 191.89
+IMPALA iter 112 | reward_mean = -273.678 | len_mean = 190.41
+IMPALA iter 113 | reward_mean = -259.327 | len_mean = 183.39
+IMPALA iter 114 | reward_mean = -246.472 | len_mean = 176.47
+IMPALA iter 115 | reward_mean = -267.337 | len_mean = 193.79
+IMPALA iter 116 | reward_mean = -258.444 | len_mean = 187.33
+IMPALA iter 117 | reward_mean = -265.965 | len_mean = 187.79
+IMPALA iter 118 | reward_mean = -262.069 | len_mean = 184.84
+IMPALA iter 119 | reward_mean = -267.696 | len_mean = 190.00
+IMPALA iter 120 | reward_mean = -258.112 | len_mean = 184.02
+IMPALA iter 121 | reward_mean = -257.115 | len_mean = 188.54
+IMPALA iter 122 | reward_mean = -257.729 | len_mean = 191.59
+IMPALA iter 123 | reward_mean = -260.430 | len_mean = 182.60
+IMPALA iter 124 | reward_mean = -264.930 | len_mean = 187.75
+IMPALA iter 125 | reward_mean = -256.280 | len_mean = 182.94
+IMPALA iter 126 | reward_mean = -274.891 | len_mean = 195.06
+IMPALA iter 127 | reward_mean = -258.210 | len_mean = 184.96
+IMPALA iter 128 | reward_mean = -270.261 | len_mean = 192.45
+IMPALA iter 129 | reward_mean = -255.098 | len_mean = 184.16
+IMPALA iter 130 | reward_mean = -267.092 | len_mean = 194.20
+IMPALA iter 131 | reward_mean = -264.448 | len_mean = 188.26
+IMPALA iter 132 | reward_mean = -253.004 | len_mean = 188.17
+IMPALA iter 133 | reward_mean = -255.388 | len_mean = 186.82
+IMPALA iter 134 | reward_mean = -252.320 | len_mean = 190.61
+IMPALA iter 135 | reward_mean = -257.546 | len_mean = 192.38
+IMPALA iter 136 | reward_mean = -276.790 | len_mean = 193.05
+IMPALA iter 137 | reward_mean = -259.236 | len_mean = 184.76
+IMPALA iter 138 | reward_mean = -258.774 | len_mean = 187.89
+IMPALA iter 139 | reward_mean = -260.898 | len_mean = 185.75
+IMPALA iter 140 | reward_mean = -251.045 | len_mean = 188.05
+IMPALA iter 141 | reward_mean = -260.588 | len_mean = 186.52
+IMPALA iter 142 | reward_mean = -265.471 | len_mean = 187.71
+IMPALA iter 143 | reward_mean = -249.499 | len_mean = 183.87
+IMPALA iter 144 | reward_mean = -255.349 | len_mean = 185.36
+IMPALA iter 145 | reward_mean = -249.857 | len_mean = 179.89
+IMPALA iter 146 | reward_mean = -235.961 | len_mean = 173.47
+IMPALA iter 147 | reward_mean = -254.432 | len_mean = 184.10
+IMPALA iter 148 | reward_mean = -268.727 | len_mean = 190.39
+IMPALA iter 149 | reward_mean = -249.429 | len_mean = 187.14
+IMPALA iter 150 | reward_mean = -259.347 | len_mean = 188.86
+IMPALA iter 151 | reward_mean = -251.903 | len_mean = 185.13
+IMPALA iter 152 | reward_mean = -257.418 | len_mean = 186.24
+IMPALA iter 153 | reward_mean = -273.437 | len_mean = 184.48
+IMPALA iter 154 | reward_mean = -270.779 | len_mean = 192.77
+IMPALA iter 155 | reward_mean = -283.209 | len_mean = 194.70
+IMPALA iter 156 | reward_mean = -248.504 | len_mean = 181.13
+IMPALA iter 157 | reward_mean = -244.444 | len_mean = 178.18
+IMPALA iter 158 | reward_mean = -257.532 | len_mean = 189.73
+IMPALA iter 159 | reward_mean = -270.665 | len_mean = 193.58
+IMPALA iter 160 | reward_mean = -248.216 | len_mean = 184.59
+IMPALA iter 161 | reward_mean = -261.344 | len_mean = 185.81
+IMPALA iter 162 | reward_mean = -254.830 | len_mean = 192.57
+IMPALA iter 163 | reward_mean = -251.100 | len_mean = 181.05
+IMPALA iter 164 | reward_mean = -258.929 | len_mean = 183.31
+IMPALA iter 165 | reward_mean = -247.651 | len_mean = 184.31
+IMPALA iter 166 | reward_mean = -240.280 | len_mean = 180.51
+IMPALA iter 167 | reward_mean = -244.119 | len_mean = 178.81
+IMPALA iter 168 | reward_mean = -255.871 | len_mean = 186.46
+IMPALA iter 169 | reward_mean = -257.711 | len_mean = 186.63
+IMPALA iter 170 | reward_mean = -248.609 | len_mean = 183.61
+IMPALA iter 171 | reward_mean = -271.487 | len_mean = 188.86
+IMPALA iter 172 | reward_mean = -252.232 | len_mean = 178.41
+IMPALA iter 173 | reward_mean = -240.359 | len_mean = 180.41
+IMPALA iter 174 | reward_mean = -270.264 | len_mean = 187.52
+IMPALA iter 175 | reward_mean = -266.438 | len_mean = 190.65
+IMPALA iter 176 | reward_mean = -260.853 | len_mean = 188.22
+IMPALA iter 177 | reward_mean = -246.287 | len_mean = 185.69
+IMPALA iter 178 | reward_mean = -255.142 | len_mean = 185.35
+IMPALA iter 179 | reward_mean = -250.240 | len_mean = 185.41
+IMPALA iter 180 | reward_mean = -273.914 | len_mean = 186.02
+IMPALA iter 181 | reward_mean = -261.645 | len_mean = 186.89
+IMPALA iter 182 | reward_mean = -244.982 | len_mean = 183.56
+IMPALA iter 183 | reward_mean = -286.861 | len_mean = 193.16
+IMPALA iter 184 | reward_mean = -275.891 | len_mean = 196.08
+IMPALA iter 185 | reward_mean = -251.858 | len_mean = 186.09
+IMPALA iter 186 | reward_mean = -262.039 | len_mean = 190.11
+IMPALA iter 187 | reward_mean = -259.554 | len_mean = 183.44
+IMPALA iter 188 | reward_mean = -279.258 | len_mean = 192.45
+IMPALA iter 189 | reward_mean = -277.311 | len_mean = 195.64
+IMPALA iter 190 | reward_mean = -259.089 | len_mean = 190.97
+IMPALA iter 191 | reward_mean = -236.438 | len_mean = 183.56
+IMPALA iter 192 | reward_mean = -247.010 | len_mean = 178.15
+IMPALA iter 193 | reward_mean = -266.304 | len_mean = 188.86
+IMPALA iter 194 | reward_mean = -239.712 | len_mean = 178.38
+IMPALA iter 195 | reward_mean = -257.202 | len_mean = 185.82
+IMPALA iter 196 | reward_mean = -246.950 | len_mean = 183.08
+IMPALA iter 197 | reward_mean = -255.298 | len_mean = 188.66
+IMPALA iter 198 | reward_mean = -267.712 | len_mean = 191.00
+IMPALA iter 199 | reward_mean = -252.532 | len_mean = 187.23
+IMPALA iter 200 | reward_mean = -264.547 | len_mean = 191.29</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>(pid=gcs_server) [2025-11-29 14:54:01,745 E 81106 63267699] (gcs_server) gcs_server.cc:303: Failed to establish connection to the event+metrics exporter agent. Events and metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(raylet) [2025-11-29 14:54:02,407 E 81110 63267799] (raylet) main.cc:979: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+(SingleAgentEnvRunner pid=81115) [2025-11-29 14:54:02,932 E 81115 63268004] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14
+[2025-11-29 14:54:03,121 E 79225 63267848] core_worker_process.cc:837: Failed to establish connection to the metrics exporter agent. Metrics will not be exported. Exporter agent status: RpcError: Running out of retries to initialize the metrics agent. rpc_code: 14</code></pre>
+</div>
+</div>
+<div id="cell-15" class="cell" data-execution_count="34">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># fresh env for evaluation</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>record_env <span class="op">=</span> FrogFly3DEnv(env_config)</span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>impala_policy <span class="op">=</span> trained_policy_factory(impala_algo)</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>frog_impala, fly_impala <span class="op">=</span> rollout_trajectory(</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    record_env,</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    policy_fn<span class="op">=</span>impala_policy,</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    max_steps<span class="op">=</span><span class="dv">200</span>,</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>make_3d_gif(</span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>    frog_impala,</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>    fly_impala,</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>    out_path<span class="op">=</span><span class="st">"frog_fly_impala.gif"</span>,</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a>    title<span class="op">=</span><span class="st">"IMPALA Frog vs Fly (Continuous)"</span>,</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Saved GIF: frog_fly_impala.gif"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Saved GIF: frog_fly_impala.gif</code></pre>
+</div>
+</div>
+<div id="cell-16" class="cell" data-execution_count="35">
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>iters_ppo <span class="op">=</span> np.arange(<span class="dv">1</span>, <span class="bu">len</span>(mean_rewards) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>iters_sac <span class="op">=</span> np.arange(<span class="dv">1</span>, <span class="bu">len</span>(sac_mean_rewards) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>iters_imp <span class="op">=</span> np.arange(<span class="dv">1</span>, <span class="bu">len</span>(impala_mean_rewards) <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">5</span>))</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>plt.plot(iters_ppo, mean_rewards, label<span class="op">=</span><span class="st">"PPO"</span>)</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>plt.plot(iters_sac, sac_mean_rewards, label<span class="op">=</span><span class="st">"SAC"</span>)</span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>plt.plot(iters_imp, impala_mean_rewards, label<span class="op">=</span><span class="st">"IMPALA"</span>)</span>
+<span id="cb31-12"><a href="#cb31-12" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Training iteration"</span>)</span>
+<span id="cb31-13"><a href="#cb31-13" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Mean episode return"</span>)</span>
+<span id="cb31-14"><a href="#cb31-14" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Frog–Fly: PPO vs SAC vs IMPALA"</span>)</span>
+<span id="cb31-15"><a href="#cb31-15" aria-hidden="true" tabindex="-1"></a>plt.grid(<span class="va">True</span>)</span>
+<span id="cb31-16"><a href="#cb31-16" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb31-17"><a href="#cb31-17" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb31-18"><a href="#cb31-18" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="frog_fly_files/figure-html/cell-16-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="reinforcement-learning-algorithms-ppo-sac-impala" class="level2">
+<h2 class="anchored" data-anchor-id="reinforcement-learning-algorithms-ppo-sac-impala">Reinforcement Learning Algorithms (PPO, SAC, IMPALA)</h2>
+<hr>
+<section id="proximal-policy-optimization-ppo" class="level3">
+<h3 class="anchored" data-anchor-id="proximal-policy-optimization-ppo">Proximal Policy Optimization (PPO)</h3>
+<p>Probability ratio:</p>
+<p><span class="math display">\[
+r_t(\theta) =
+\dfrac{\pi_\theta(a_t|s_t)}
+{\pi_{\theta_{\text{old}}}(a_t|s_t)}
+\]</span></p>
+<p>Advantage estimate:</p>
+<p><span class="math display">\[
+A_t = \sum_{k=0}^{T-t} \gamma^k r_{t+k} - V_\phi(s_t)
+\]</span></p>
+<p>Clipped PPO objective:</p>
+<p><span class="math display">\[
+J(\theta) =
+\mathbb{E}_t\Big[
+\min(
+r_t(\theta)A_t,\,
+\text{clip}(r_t(\theta),1-\epsilon,1+\epsilon)A_t
+)\Big]
+\]</span></p>
+<p>Value regression loss:</p>
+<p><span class="math display">\[
+L_V(\phi)=\mathbb{E}_t[(V_\phi(s_t)-R_t)^2]
+\]</span></p>
+<hr>
+</section>
+<section id="soft-actorcritic-sac" class="level3">
+<h3 class="anchored" data-anchor-id="soft-actorcritic-sac">Soft Actor–Critic (SAC)</h3>
+<p>Maximum entropy policy objective:</p>
+<p><span class="math display">\[
+J(\theta) =
+\mathbb{E}_{(s_t,a_t)\sim\mathcal{D}}
+\Big[
+Q_\phi(s_t,a_t) - \alpha \log \pi_\theta(a_t|s_t)
+\Big]
+\]</span></p>
+<p>Soft Bellman backup:</p>
+<p><span class="math display">\[
+Q_\phi(s_t,a_t)=
+r_t + \gamma\,\mathbb{E}_{a_{t+1}\sim\pi}
+\Big[
+Q_\phi(s_{t+1},a_{t+1})
+- \alpha \log \pi(a_{t+1}|s_{t+1})
+\Big]
+\]</span></p>
+<hr>
+</section>
+<section id="impala-v-trace-off-policy-correction" class="level3">
+<h3 class="anchored" data-anchor-id="impala-v-trace-off-policy-correction">IMPALA (V-Trace Off-Policy Correction)</h3>
+<p>V-trace return:</p>
+<p><span class="math display">\[
+v_t = V(s_t) +
+\sum_{k=t}^{t+n-1}
+\gamma^{k-t}
+\Bigg(
+\prod_{i=t}^{k-1} c_i
+\Bigg)
+\delta_k
+\]</span></p>
+<p>TD error with clipped importance ratio:</p>
+<p><span class="math display">\[
+\delta_t =
+\rho_t \Big(
+r_t + \gamma V(s_{t+1}) - V(s_t)
+\Big)
+\]</span></p>
+<p>Importance sampling ratios:</p>
+<p><span class="math display">\[
+\rho_t = \frac{\pi(a_t|s_t)}{\mu(a_t|s_t)}, \qquad
+c_t = \min(1,\rho_t)
+\]</span></p>
+</section>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
